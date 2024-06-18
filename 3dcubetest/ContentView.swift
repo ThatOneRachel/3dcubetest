@@ -9,12 +9,12 @@ import SwiftUI
 import RealityKit
 
 struct ContentView: View {
-    @State private var rotationAngle: Float = 0.0
+    @State private var rotationAngle: Float = Float.pi / 4
     
     var body: some View {
         VStack {
             RealityKitView(rotationAngle: $rotationAngle)
-                .edgesIgnoringSafeArea(.all)
+                //.edgesIgnoringSafeArea(.all)
                 .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .local)
                     .onEnded({ value in
                         
