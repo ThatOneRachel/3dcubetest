@@ -15,22 +15,22 @@ struct ContentView: View {
         VStack {
             RealityKitView(rotationAngle: $rotationAngle)
                 //.edgesIgnoringSafeArea(.all)
-                .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .local)
-                    .onEnded({ value in
-                        
-                        if value.translation.width > 0 {
-                            if let coordinator = self.makeCoordinator() {
-                                coordinator.startRotationAnimation(to: rotationAngle + Float.pi / 2)
-                            }
-                        } else {
-                            if let coordinator = self.makeCoordinator() {
-                                coordinator.startRotationAnimation(to: rotationAngle - Float.pi / 2)
-                            }
-                        }
-                        
-
-                    })
-                )
+//                .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .local)
+//                    .onEnded({ value in
+//                        
+//                        if value.translation.width > 0 {
+//                            if let coordinator = self.makeCoordinator() {
+//                                coordinator.startRotationAnimation(to: rotationAngle + Float.pi / 2)
+//                            }
+//                        } else {
+//                            if let coordinator = self.makeCoordinator() {
+//                                coordinator.startRotationAnimation(to: rotationAngle - Float.pi / 2)
+//                            }
+//                        }
+//                        
+//
+//                    })
+                //)
         }
     }
     
