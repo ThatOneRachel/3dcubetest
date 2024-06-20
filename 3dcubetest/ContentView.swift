@@ -14,7 +14,7 @@ struct ContentView: View {
     var body: some View {
         VStack {
             RealityKitView(rotationAngle: $rotationAngle)
-                //.edgesIgnoringSafeArea(.all)
+                .edgesIgnoringSafeArea(.all)
                 .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .local)
                     .onEnded({ value in
                         

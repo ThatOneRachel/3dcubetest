@@ -8,20 +8,21 @@ struct RealityKitView: UIViewRepresentable {
     func makeUIView(context: Context) -> ARView {
         let arView = ARView(frame: .zero)
         
-        arView.debugOptions.insert(.showStatistics)
+//arView.debugOptions.insert(.showStatistics)
         
-        let anchor = AnchorEntity(world: .zero)
+        let anchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
         
         //cenário
-        let entity = try! Entity.load(named: "Floating_Lighthouse")
+        let entity = try! Entity.load(named: "isometrico")
         
         let currentScale = entity.scale
-        entity.scale = currentScale / 5
+        entity.scale = currentScale
         
-        let yRotation = simd_quatf(angle: Float.pi / 4, axis: [0, 1, 0])
+        let yRotation = simd_quatf(angle: 0, axis: [0, 1, 0])
         let xRotation = simd_quatf(angle: Float.pi / 4, axis: [1, 0, 0])
         
         entity.transform.rotation = simd_mul(xRotation, yRotation)
+        
         
         anchor.addChild(entity)
         
