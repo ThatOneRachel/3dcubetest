@@ -15,16 +15,20 @@ struct ContentView: View {
         VStack {
             RealityKitView(rotationAngle: $rotationAngle)
                 .edgesIgnoringSafeArea(.all)
+            //drag gesture vai por cima dessa camada do reality, então vou precisar fazer tudo pela realityView kkrying
                 .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .local)
                     .onEnded({ value in
                         
-                        if value.translation.width > 0 {
-                            if let coordinator = self.makeCoordinator() {
-                                coordinator.startRotationAnimation(to: rotationAngle + Float.pi / 2)
-                            }
-                        } else {
-                            if let coordinator = self.makeCoordinator() {
-                                coordinator.startRotationAnimation(to: rotationAngle - Float.pi / 2)
+                        if (abs(value.translation.height) < 100) {
+                            
+                            if value.translation.width > 2 {
+                                if let coordinator = self.makeCoordinator() {
+                                    coordinator.startRotationAnimation(to: rotationAngle + Float.pi / 2)
+                                }
+                            } else if value.translation.width < -2 {
+                                if let coordinator = self.makeCoordinator() {
+                                    coordinator.startRotationAnimation(to: rotationAngle - Float.pi / 2)
+                                }
                             }
                         }
                         

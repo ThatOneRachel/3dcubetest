@@ -8,7 +8,7 @@ struct RealityKitView: UIViewRepresentable {
     func makeUIView(context: Context) -> ARView {
         let arView = ARView(frame: .zero)
         
-//arView.debugOptions.insert(.showStatistics)
+        //arView.debugOptions.insert(.showStatistics)
         
         let anchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
         
@@ -23,6 +23,7 @@ struct RealityKitView: UIViewRepresentable {
         
         entity.transform.rotation = simd_mul(xRotation, yRotation)
         
+        entity.generateCollisionShapes(recursive: true)
         
         anchor.addChild(entity)
         
@@ -37,8 +38,10 @@ struct RealityKitView: UIViewRepresentable {
         
         let bounds = entity.visualBounds(relativeTo: nil)
         let cornerPosition = SIMD3<Float>(bounds.max.x / 2, bounds.max.y / 2, bounds.max.z)
-    
+        
         cube.position = cornerPosition
+        
+        cube.generateCollisionShapes(recursive: true)
         
         print("cenário", entity.visualBounds(relativeTo: nil))
         print("cubo", cube.position)
@@ -50,7 +53,8 @@ struct RealityKitView: UIViewRepresentable {
         context.coordinator.entity = entity
         context.coordinator.cube = cube
         
-       
+        let tapGestureRecognizer = UITapGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handleTap(_:)))
+        arView.addGestureRecognizer(tapGestureRecognizer)
         
         return arView
     }
@@ -105,6 +109,24 @@ struct RealityKitView: UIViewRepresentable {
                 displayLink = nil
             } else {
                 rotationAngle.wrappedValue += angleDifference > 0 ? step : -step
+            }
+        }
+        
+        @objc func handleTap(_ sender: UITapGestureRecognizer) {
+            
+            
+            guard let arView = sender.view as? ARView else { return }
+            let location = sender.location(in: arView)
+            print("entrouuu")
+            // Perform a ray cast to find the entity at the touch location
+            let results = arView.hitTest(location, query: .nearest)
+            if let firstResult = results.first {
+                let entity = firstResult.entity
+                let position = firstResult.position
+                
+                let touchPosition = entity.convert(position: position, to: nil)
+                
+                print("Touched position: \(touchPosition)")
             }
         }
     }
