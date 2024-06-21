@@ -32,8 +32,6 @@ struct RealityKitView: UIViewRepresentable {
         let material = SimpleMaterial(color: .blue, isMetallic: false)
         let cube = ModelEntity(mesh: mesh, materials: [material])
         
-        
-        
         cube.transform.rotation = simd_mul(xRotation, yRotation)
         
         let bounds = entity.visualBounds(relativeTo: nil)
@@ -50,11 +48,18 @@ struct RealityKitView: UIViewRepresentable {
         
         arView.scene.addAnchor(anchor)
         
+        
+        //passa pro coordinator
         context.coordinator.entity = entity
         context.coordinator.cube = cube
         
+        
+        //MARK: TAP GESTURES
         let tapGestureRecognizer = UITapGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handleTap(_:)))
         arView.addGestureRecognizer(tapGestureRecognizer)
+        
+        let panGesture = UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePan(_:)))
+        arView.addGestureRecognizer(panGesture)
         
         return arView
     }
@@ -82,6 +87,12 @@ struct RealityKitView: UIViewRepresentable {
         var rotationAngle: Binding<Float>
         var targetAngle: Float?
         var displayLink: CADisplayLink?
+        
+        
+        var lastPanLocation: CGPoint = .zero
+        var currentYRotation: Float = 0.0
+        var currentXRotation: Float = 0.0
+        
         
         init(rotationAngle: Binding<Float>) {
             self.rotationAngle = rotationAngle
@@ -128,6 +139,20 @@ struct RealityKitView: UIViewRepresentable {
                 
                 print("Touched position: \(touchPosition)")
             }
+        }
+        
+        @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
+            guard let entity = entity else { return }
+            let translation = gesture.translation(in: gesture.view)
+            print(translation.x)
+            if gesture.state == .ended {
+                if translation.x > 0 {
+                    startRotationAnimation(to: rotationAngle.wrappedValue + Float.pi / 2)
+                } else {
+                    startRotationAnimation(to: rotationAngle.wrappedValue - Float.pi / 2)
+                }
+            }
+            
         }
     }
 }
