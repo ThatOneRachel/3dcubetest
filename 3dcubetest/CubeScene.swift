@@ -40,7 +40,6 @@ struct RealityKitView: UIViewRepresentable {
         let material = SimpleMaterial(color: .blue, isMetallic: false)
         let cube = ModelEntity(mesh: mesh, materials: [material])
         
-        //cube.transform.rotation = simd_mul(xRotation, yRotation)
         
         cube.position = cubePosition
         
@@ -80,6 +79,8 @@ struct RealityKitView: UIViewRepresentable {
         
         entity.transform.rotation = combinedRotation
         cube.setPosition(cubePosition, relativeTo: entity)
+        print("posição do cube em relação a entidade", cube.position)
+        print("posição do cube em relação a nil", cube.position(relativeTo: nil))
         
     }
     
@@ -136,23 +137,20 @@ struct RealityKitView: UIViewRepresentable {
         }
         
         @objc func handleTap(_ sender: UITapGestureRecognizer) {
-            
-            
             guard let arView = sender.view as? ARView else { return }
             let location = sender.location(in: arView)
-            print("entrouuu")
             
             let results = arView.hitTest(location, query: .nearest)
             if let firstResult = results.first {
-                let entity = firstResult.entity
-                let position = firstResult.position
-                let touchPosition = entity.convert(position: position, to: entity)
-                
-                cubePosition.wrappedValue = touchPosition
-                print("position", touchPosition)
-                //print("Touched position: \(touchPosition)")
+                let hitEntity = firstResult.entity
+                let touchPositionInWorld = firstResult.position
+                if let largerCube = entity {
+                    let touchPositionInLargerCube = largerCube.convert(position: touchPositionInWorld, from: nil)
+                    cubePosition.wrappedValue = touchPositionInLargerCube
+                }
             }
         }
+
         
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
             let translation = gesture.translation(in: gesture.view)
