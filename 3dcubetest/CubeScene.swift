@@ -5,25 +5,33 @@ struct RealityKitView: UIViewRepresentable {
     
     @Binding var rotationAngle: Float
     
+    @State var cubePosition: SIMD3<Float> = SIMD3<Float>(0, 0, 0.5)
+    
     func makeUIView(context: Context) -> ARView {
         let arView = ARView(frame: .zero)
         
-        //arView.debugOptions.insert(.showStatistics)
+        arView.debugOptions.insert(.showPhysics)
         
         let anchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
         
         //cenário
-        let entity = try! Entity.load(named: "isometrico")
+        //let entity = try! ModelEntity.load(named: "isometrico")
+        let mesh1 = MeshResource.generateBox(width: 0.7, height: 0.2, depth: 0.7)
+        let material1 = SimpleMaterial(color: .red, isMetallic: false)
+        let entity = ModelEntity(mesh: mesh1, materials: [material1])
         
         let currentScale = entity.scale
         entity.scale = currentScale
         
-        let yRotation = simd_quatf(angle: 0, axis: [0, 1, 0])
+        let yRotation = simd_quatf(angle: Float.pi / 4, axis: [0, 1, 0])
         let xRotation = simd_quatf(angle: Float.pi / 4, axis: [1, 0, 0])
         
         entity.transform.rotation = simd_mul(xRotation, yRotation)
         
+        //        let components = CollisionComponent(shapes: [.generateBox(size: SIMD3<Float>(0.1, 0.1, 0.1))])
+        //        entity.components.set(components)
         entity.generateCollisionShapes(recursive: true)
+        
         
         anchor.addChild(entity)
         
@@ -32,19 +40,16 @@ struct RealityKitView: UIViewRepresentable {
         let material = SimpleMaterial(color: .blue, isMetallic: false)
         let cube = ModelEntity(mesh: mesh, materials: [material])
         
-        cube.transform.rotation = simd_mul(xRotation, yRotation)
+        //cube.transform.rotation = simd_mul(xRotation, yRotation)
         
-        let bounds = entity.visualBounds(relativeTo: nil)
-        let cornerPosition = SIMD3<Float>(bounds.max.x / 2, bounds.max.y / 2, bounds.max.z)
-        
-        cube.position = cornerPosition
+        cube.position = cubePosition
         
         cube.generateCollisionShapes(recursive: true)
         
         print("cenário", entity.visualBounds(relativeTo: nil))
         print("cubo", cube.position)
         
-        anchor.addChild(cube)
+        entity.addChild(cube)
         
         arView.scene.addAnchor(anchor)
         
@@ -74,17 +79,19 @@ struct RealityKitView: UIViewRepresentable {
         let combinedRotation = simd_mul(xRotation, yRotation)
         
         entity.transform.rotation = combinedRotation
-        cube.transform.rotation = combinedRotation
+        cube.setPosition(cubePosition, relativeTo: entity)
+        
     }
     
     func makeCoordinator() -> Coordinator {
-        Coordinator(rotationAngle: $rotationAngle)
+        Coordinator(rotationAngle: $rotationAngle, cubePosition: $cubePosition)
     }
     
     class Coordinator: NSObject {
         var entity: Entity?
         var cube: ModelEntity?
         var rotationAngle: Binding<Float>
+        var cubePosition: Binding<SIMD3<Float>>
         var targetAngle: Float?
         var displayLink: CADisplayLink?
         
@@ -94,12 +101,15 @@ struct RealityKitView: UIViewRepresentable {
         var currentXRotation: Float = 0.0
         
         
-        init(rotationAngle: Binding<Float>) {
+        init(rotationAngle: Binding<Float>, cubePosition: Binding<SIMD3<Float>>) {
             self.rotationAngle = rotationAngle
+            self.cubePosition = cubePosition
         }
         
         func startRotationAnimation(to angle: Float) {
             targetAngle = angle
+            
+            
             if displayLink == nil {
                 displayLink = CADisplayLink(target: self, selector: #selector(updateRotation))
                 //basicamente, o CADisplay funciona como um loop até chegar no ponto que a gente quer
@@ -110,7 +120,6 @@ struct RealityKitView: UIViewRepresentable {
         
         @objc func updateRotation() {
             guard let targetAngle = targetAngle else { return }
-            
             let angleDifference = targetAngle - rotationAngle.wrappedValue
             let step: Float = 0.05
             
@@ -118,7 +127,10 @@ struct RealityKitView: UIViewRepresentable {
                 rotationAngle.wrappedValue = targetAngle
                 displayLink?.invalidate()
                 displayLink = nil
+                
+                
             } else {
+                
                 rotationAngle.wrappedValue += angleDifference > 0 ? step : -step
             }
         }
@@ -129,20 +141,20 @@ struct RealityKitView: UIViewRepresentable {
             guard let arView = sender.view as? ARView else { return }
             let location = sender.location(in: arView)
             print("entrouuu")
-            // Perform a ray cast to find the entity at the touch location
+            
             let results = arView.hitTest(location, query: .nearest)
             if let firstResult = results.first {
                 let entity = firstResult.entity
                 let position = firstResult.position
+                let touchPosition = entity.convert(position: position, to: entity)
                 
-                let touchPosition = entity.convert(position: position, to: nil)
-                
-                print("Touched position: \(touchPosition)")
+                cubePosition.wrappedValue = touchPosition
+                print("position", touchPosition)
+                //print("Touched position: \(touchPosition)")
             }
         }
         
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
-            guard let entity = entity else { return }
             let translation = gesture.translation(in: gesture.view)
             print(translation.x)
             if gesture.state == .ended {
