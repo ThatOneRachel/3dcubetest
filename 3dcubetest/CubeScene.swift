@@ -138,19 +138,17 @@ struct RealityKitView: UIViewRepresentable {
         
         @objc func handleTap(_ sender: UITapGestureRecognizer) {
             guard let arView = sender.view as? ARView else { return }
+            guard let entity = entity else { return }
             let location = sender.location(in: arView)
             
             let results = arView.hitTest(location, query: .nearest)
             if let firstResult = results.first {
-                let hitEntity = firstResult.entity
-                let touchPositionInWorld = firstResult.position
-                if let largerCube = entity {
-                    let touchPositionInLargerCube = largerCube.convert(position: touchPositionInWorld, from: nil)
-                    cubePosition.wrappedValue = touchPositionInLargerCube
-                }
+                let position = firstResult.position
+                let positionInScenary = entity.convert(position: position, from: nil)
+                cubePosition.wrappedValue = positionInScenary
             }
         }
-
+        
         
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
             let translation = gesture.translation(in: gesture.view)
