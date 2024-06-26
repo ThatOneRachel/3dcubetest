@@ -11,7 +11,7 @@ struct RealityKitView: UIViewRepresentable {
         let arView = ARView(frame: .zero)
         
         arView.debugOptions.insert(.showPhysics)
-        
+        arView.cameraMode = .nonAR
         let anchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
         
         //cenário
