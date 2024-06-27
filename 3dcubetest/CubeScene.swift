@@ -1,5 +1,6 @@
 import SwiftUI
 import RealityKit
+import Combine
 
 struct RealityKitView: UIViewRepresentable {
     
@@ -7,31 +8,29 @@ struct RealityKitView: UIViewRepresentable {
     
     @State var cubePosition: SIMD3<Float> = SIMD3<Float>(0, 0, 0.5)
     
+    
+    
     func makeUIView(context: Context) -> ARView {
         let arView = ARView(frame: .zero)
+        arView.cameraMode = .nonAR
         
         arView.debugOptions.insert(.showPhysics)
-        arView.cameraMode = .nonAR
+        
         let anchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
         
         //cenário
-        //let entity = try! ModelEntity.load(named: "isometrico")
-        let mesh1 = MeshResource.generateBox(width: 0.7, height: 0.2, depth: 0.7)
-        let material1 = SimpleMaterial(color: .red, isMetallic: false)
-        let entity = ModelEntity(mesh: mesh1, materials: [material1])
-        
-        let currentScale = entity.scale
-        entity.scale = currentScale
+        let entity = try! ModelEntity.load(named: "cenaTeste2")
+        entity.name = "cenário"
         
         let yRotation = simd_quatf(angle: Float.pi / 4, axis: [0, 1, 0])
         let xRotation = simd_quatf(angle: Float.pi / 4, axis: [1, 0, 0])
         
+        
         entity.transform.rotation = simd_mul(xRotation, yRotation)
         
-        //        let components = CollisionComponent(shapes: [.generateBox(size: SIMD3<Float>(0.1, 0.1, 0.1))])
-        //        entity.components.set(components)
-        entity.generateCollisionShapes(recursive: true)
+        let components = CollisionComponent(shapes: [.generateBox(size: SIMD3<Float>(0.55, 0.03, 0.55))])
         
+        entity.components.set(components)
         
         anchor.addChild(entity)
         
@@ -40,6 +39,7 @@ struct RealityKitView: UIViewRepresentable {
         let material = SimpleMaterial(color: .blue, isMetallic: false)
         let cube = ModelEntity(mesh: mesh, materials: [material])
         
+        cube.name = "personagem"
         
         cube.position = cubePosition
         
@@ -50,15 +50,29 @@ struct RealityKitView: UIViewRepresentable {
         
         entity.addChild(cube)
         
+        
+        //semente
+        let seed = try! ModelEntity.load(named: "cenaSemente")
+        
+        
+        seed.generateCollisionShapes(recursive: true)
+        
+        seed.name = "semente"
+        
+        entity.addChild(seed)
+        
         arView.scene.addAnchor(anchor)
+        
+        
         
         
         //passa pro coordinator
         context.coordinator.entity = entity
         context.coordinator.cube = cube
+        context.coordinator.seed = seed
         
         
-        //MARK: TAP GESTURES
+        //MARK: - TAP GESTURES
         let tapGestureRecognizer = UITapGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handleTap(_:)))
         arView.addGestureRecognizer(tapGestureRecognizer)
         
@@ -82,6 +96,21 @@ struct RealityKitView: UIViewRepresentable {
         print("posição do cube em relação a entidade", cube.position)
         print("posição do cube em relação a nil", cube.position(relativeTo: nil))
         
+        //is this supposed to happen?
+        if context.coordinator.subscriptions.isEmpty {
+            uiView.scene.subscribe(to: CollisionEvents.Began.self) { event in
+                print("Collision began between \(event.entityA) and \(event.entityB)")
+            }.store(in: &context.coordinator.subscriptions)
+            
+            uiView.scene.subscribe(to: CollisionEvents.Updated.self) { event in
+                print("Collision updated between \(event.entityA) and \(event.entityB)")
+            }.store(in: &context.coordinator.subscriptions)
+            
+            uiView.scene.subscribe(to: CollisionEvents.Ended.self) { event in
+                print("Collision ended between \(event.entityA) and \(event.entityB)")
+            }.store(in: &context.coordinator.subscriptions)
+        }
+        
     }
     
     func makeCoordinator() -> Coordinator {
@@ -91,8 +120,11 @@ struct RealityKitView: UIViewRepresentable {
     class Coordinator: NSObject {
         var entity: Entity?
         var cube: ModelEntity?
+        var seed: Entity?
         var rotationAngle: Binding<Float>
         var cubePosition: Binding<SIMD3<Float>>
+        
+        
         var targetAngle: Float?
         var displayLink: CADisplayLink?
         
@@ -100,6 +132,8 @@ struct RealityKitView: UIViewRepresentable {
         var lastPanLocation: CGPoint = .zero
         var currentYRotation: Float = 0.0
         var currentXRotation: Float = 0.0
+        
+        var subscriptions = Set<AnyCancellable>()
         
         
         init(rotationAngle: Binding<Float>, cubePosition: Binding<SIMD3<Float>>) {
@@ -138,14 +172,33 @@ struct RealityKitView: UIViewRepresentable {
         
         @objc func handleTap(_ sender: UITapGestureRecognizer) {
             guard let arView = sender.view as? ARView else { return }
+            
             guard let entity = entity else { return }
+            guard let seed = seed else { return }
+            
+            let realSeed = seed.children.first!.children.first
+            
             let location = sender.location(in: arView)
             
             let results = arView.hitTest(location, query: .nearest)
             if let firstResult = results.first {
-                let position = firstResult.position
-                let positionInScenary = entity.convert(position: position, from: nil)
-                cubePosition.wrappedValue = positionInScenary
+                
+                let touchedEntity = firstResult.entity
+                
+                //caso toque no cenário
+                if touchedEntity.name == entity.name {
+                    let position = firstResult.position
+                    let positionInScenary = entity.convert(position: position, from: nil)
+                    cubePosition.wrappedValue = positionInScenary
+                    
+                    print("DEBUG tocou nessa merdinha", touchedEntity)
+                } else if realSeed!.name == touchedEntity.parent!.name {
+                    //caso toque na seed
+                    print("DEBUG tocou na semente")
+                    
+                }
+                
+                
             }
         }
         
