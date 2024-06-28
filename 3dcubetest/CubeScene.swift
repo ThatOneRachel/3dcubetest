@@ -1,91 +1,69 @@
 import SwiftUI
 import RealityKit
-import Combine
 
 struct RealityKitView: UIViewRepresentable {
     
     @Binding var rotationAngle: Float
-    
     @State var cubePosition: SIMD3<Float> = SIMD3<Float>(0, 0, 0.5)
-    
-    
+    @State var seedPosition: SIMD3<Float> = SIMD3<Float>(0, 0, 0)
     
     func makeUIView(context: Context) -> ARView {
         let arView = ARView(frame: .zero)
         arView.cameraMode = .nonAR
-        
         arView.debugOptions.insert(.showPhysics)
         
         let anchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
         
-        //cenário
+        // Scenario
         let entity = try! ModelEntity.load(named: "cenaTeste2")
-        entity.name = "cenário"
+        entity.name = "cenario"
         
         let yRotation = simd_quatf(angle: Float.pi / 4, axis: [0, 1, 0])
         let xRotation = simd_quatf(angle: Float.pi / 4, axis: [1, 0, 0])
-        
-        
         entity.transform.rotation = simd_mul(xRotation, yRotation)
         
         let components = CollisionComponent(shapes: [.generateBox(size: SIMD3<Float>(0.55, 0.03, 0.55))])
-        
         entity.components.set(components)
         
         anchor.addChild(entity)
         
-        //personagem
+        // Cube (personagem)
         let mesh = MeshResource.generateBox(size: 0.1)
         let material = SimpleMaterial(color: .blue, isMetallic: false)
         let cube = ModelEntity(mesh: mesh, materials: [material])
-        
         cube.name = "personagem"
-        
         cube.position = cubePosition
-        
         cube.generateCollisionShapes(recursive: true)
-        
-        print("cenário", entity.visualBounds(relativeTo: nil))
-        print("cubo", cube.position)
-        
         entity.addChild(cube)
         
-        
-        //semente
+        // Seed (semente)
         let seed = try! ModelEntity.load(named: "cenaSemente")
-        
-        
         seed.generateCollisionShapes(recursive: true)
-        
         seed.name = "semente"
-        
         entity.addChild(seed)
         
         arView.scene.addAnchor(anchor)
         
-        
-        
-        
-        //passa pro coordinator
+        // Pass entities to coordinator
         context.coordinator.entity = entity
         context.coordinator.cube = cube
         context.coordinator.seed = seed
         
-        
-        //MARK: - TAP GESTURES
+        // Add gesture recognizers
         let tapGestureRecognizer = UITapGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handleTap(_:)))
         arView.addGestureRecognizer(tapGestureRecognizer)
         
         let panGesture = UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePan(_:)))
         arView.addGestureRecognizer(panGesture)
+    
         
         return arView
     }
     
     func updateUIView(_ uiView: ARView, context: Context) {
-        
         guard let entity = context.coordinator.entity else { return }
-        guard let cube  = context.coordinator.cube else { return }
+        guard let cube = context.coordinator.cube else { return }
+        guard let seed = context.coordinator.seed else { return }
         
         let yRotation = simd_quatf(angle: rotationAngle, axis: [0, 1, 0])
         let xRotation = simd_quatf(angle: Float.pi / 4, axis: [1, 0, 0])
@@ -93,28 +71,14 @@ struct RealityKitView: UIViewRepresentable {
         
         entity.transform.rotation = combinedRotation
         cube.setPosition(cubePosition, relativeTo: entity)
-        print("posição do cube em relação a entidade", cube.position)
-        print("posição do cube em relação a nil", cube.position(relativeTo: nil))
+        seed.setPosition(seedPosition, relativeTo: entity)
         
-        //is this supposed to happen?
-        if context.coordinator.subscriptions.isEmpty {
-            uiView.scene.subscribe(to: CollisionEvents.Began.self) { event in
-                print("Collision began between \(event.entityA) and \(event.entityB)")
-            }.store(in: &context.coordinator.subscriptions)
-            
-            uiView.scene.subscribe(to: CollisionEvents.Updated.self) { event in
-                print("Collision updated between \(event.entityA) and \(event.entityB)")
-            }.store(in: &context.coordinator.subscriptions)
-            
-            uiView.scene.subscribe(to: CollisionEvents.Ended.self) { event in
-                print("Collision ended between \(event.entityA) and \(event.entityB)")
-            }.store(in: &context.coordinator.subscriptions)
-        }
-        
+        print("Position of cube relative to entity:", cube.position)
+        print("Position of cube relative to nil:", cube.position(relativeTo: nil))
     }
     
     func makeCoordinator() -> Coordinator {
-        Coordinator(rotationAngle: $rotationAngle, cubePosition: $cubePosition)
+        Coordinator(rotationAngle: $rotationAngle, cubePosition: $cubePosition, seedPosition: $seedPosition)
     }
     
     class Coordinator: NSObject {
@@ -123,33 +87,38 @@ struct RealityKitView: UIViewRepresentable {
         var seed: Entity?
         var rotationAngle: Binding<Float>
         var cubePosition: Binding<SIMD3<Float>>
-        
+        var seedPosition: Binding<SIMD3<Float>>
         
         var targetAngle: Float?
         var displayLink: CADisplayLink?
         
+        var targetPosition: SIMD3<Float>?
+        var displayLinkForMovement: CADisplayLink?
         
         var lastPanLocation: CGPoint = .zero
-        var currentYRotation: Float = 0.0
-        var currentXRotation: Float = 0.0
+        var isDraggingSeed = false
         
-        var subscriptions = Set<AnyCancellable>()
-        
-        
-        init(rotationAngle: Binding<Float>, cubePosition: Binding<SIMD3<Float>>) {
+        init(rotationAngle: Binding<Float>, cubePosition: Binding<SIMD3<Float>>, seedPosition: Binding<SIMD3<Float>>) {
             self.rotationAngle = rotationAngle
             self.cubePosition = cubePosition
+            self.seedPosition = seedPosition
         }
         
         func startRotationAnimation(to angle: Float) {
             targetAngle = angle
             
-            
             if displayLink == nil {
                 displayLink = CADisplayLink(target: self, selector: #selector(updateRotation))
-                //basicamente, o CADisplay funciona como um loop até chegar no ponto que a gente quer
-                
                 displayLink?.add(to: .main, forMode: .default)
+            }
+        }
+        
+        func startMovimentationAnimation(to position: SIMD3<Float>) {
+            targetPosition = position
+            
+            if displayLinkForMovement == nil {
+                displayLinkForMovement = CADisplayLink(target: self, selector: #selector(updateMovement))
+                displayLinkForMovement?.add(to: .main, forMode: .default)
             }
         }
         
@@ -162,46 +131,49 @@ struct RealityKitView: UIViewRepresentable {
                 rotationAngle.wrappedValue = targetAngle
                 displayLink?.invalidate()
                 displayLink = nil
-                
-                
             } else {
-                
                 rotationAngle.wrappedValue += angleDifference > 0 ? step : -step
+            }
+        }
+        
+        @objc func updateMovement() {
+            guard let targetPosition = targetPosition else { return }
+            let positionDifference = targetPosition - cubePosition.wrappedValue
+            let step: SIMD3<Float> = SIMD3<Float>(0.015, 0.015, 0.015)
+            
+            if length(positionDifference) < length(step) {
+                cubePosition.wrappedValue = targetPosition
+                displayLinkForMovement?.invalidate()
+                displayLinkForMovement = nil
+            } else {
+                cubePosition.wrappedValue += normalize(positionDifference) * step
             }
         }
         
         @objc func handleTap(_ sender: UITapGestureRecognizer) {
             guard let arView = sender.view as? ARView else { return }
-            
             guard let entity = entity else { return }
             guard let seed = seed else { return }
             
             let realSeed = seed.children.first!.children.first
             
             let location = sender.location(in: arView)
-            
             let results = arView.hitTest(location, query: .nearest)
+            
             if let firstResult = results.first {
-                
                 let touchedEntity = firstResult.entity
                 
-                //caso toque no cenário
                 if touchedEntity.name == entity.name {
                     let position = firstResult.position
-                    let positionInScenary = entity.convert(position: position, from: nil)
-                    cubePosition.wrappedValue = positionInScenary
+                    let positionInScenery = entity.convert(position: position, from: nil)
+                    startMovimentationAnimation(to: positionInScenery)
                     
-                    print("DEBUG tocou nessa merdinha", touchedEntity)
+                    print("DEBUG touched scenario entity", touchedEntity)
                 } else if realSeed!.name == touchedEntity.parent!.name {
-                    //caso toque na seed
-                    print("DEBUG tocou na semente")
-                    
+                    print("DEBUG touched seed")
                 }
-                
-                
             }
         }
-        
         
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
             let translation = gesture.translation(in: gesture.view)
@@ -213,11 +185,9 @@ struct RealityKitView: UIViewRepresentable {
                     startRotationAnimation(to: rotationAngle.wrappedValue - Float.pi / 2)
                 }
             }
-            
         }
     }
 }
-
 
 #Preview {
     ContentView()

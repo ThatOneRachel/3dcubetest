@@ -9,7 +9,7 @@ import SwiftUI
 import RealityKit
 
 struct ContentView: View {
-    @State private var rotationAngle: Float = Float.pi / 4
+    @State private var rotationAngle: Float = 5 * Float.pi / 4
     
     var body: some View {
         VStack {
