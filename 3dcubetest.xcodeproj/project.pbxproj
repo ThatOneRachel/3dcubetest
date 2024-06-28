@@ -14,6 +14,7 @@
 		CC528FEC2C1C7F5F0069DB8B /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC528FEB2C1C7F5F0069DB8B /* Preview Assets.xcassets */; };
 		CC528FF32C1C7FDA0069DB8B /* CubeScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC528FF22C1C7FDA0069DB8B /* CubeScene.swift */; };
 		CC6D7B912C247888004B7183 /* isometrico.usdz in Resources */ = {isa = PBXBuildFile; fileRef = CC6D7B902C247888004B7183 /* isometrico.usdz */; };
+		CC9D7F8E2C2F2C6600389980 /* Coordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9D7F8D2C2F2C6600389980 /* Coordinator.swift */; };
 		CCE5B83E2C2C8195004B4E87 /* cenaTrial.usdz in Resources */ = {isa = PBXBuildFile; fileRef = CCE5B83A2C2C8195004B4E87 /* cenaTrial.usdz */; };
 		CCE5B83F2C2C8195004B4E87 /* cenaPlataforma.usdz in Resources */ = {isa = PBXBuildFile; fileRef = CCE5B83B2C2C8195004B4E87 /* cenaPlataforma.usdz */; };
 		CCE5B8402C2C8195004B4E87 /* cenaSemente.usdz in Resources */ = {isa = PBXBuildFile; fileRef = CCE5B83C2C2C8195004B4E87 /* cenaSemente.usdz */; };
@@ -32,6 +33,7 @@
 		CC528FEB2C1C7F5F0069DB8B /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		CC528FF22C1C7FDA0069DB8B /* CubeScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CubeScene.swift; sourceTree = "<group>"; };
 		CC6D7B902C247888004B7183 /* isometrico.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = isometrico.usdz; sourceTree = "<group>"; };
+		CC9D7F8D2C2F2C6600389980 /* Coordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coordinator.swift; sourceTree = "<group>"; };
 		CCE5B83A2C2C8195004B4E87 /* cenaTrial.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = cenaTrial.usdz; sourceTree = "<group>"; };
 		CCE5B83B2C2C8195004B4E87 /* cenaPlataforma.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = cenaPlataforma.usdz; sourceTree = "<group>"; };
 		CCE5B83C2C2C8195004B4E87 /* cenaSemente.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = cenaSemente.usdz; sourceTree = "<group>"; };
@@ -82,6 +84,7 @@
 				CCE5B83A2C2C8195004B4E87 /* cenaTrial.usdz */,
 				CC528FE42C1C7F5E0069DB8B /* _dcubetestApp.swift */,
 				CC528FF22C1C7FDA0069DB8B /* CubeScene.swift */,
+				CC9D7F8D2C2F2C6600389980 /* Coordinator.swift */,
 				CC2A6B492C2079FA004A439C /* ContentView.swift */,
 				CC528FE82C1C7F5F0069DB8B /* Assets.xcassets */,
 				CC528FEA2C1C7F5F0069DB8B /* Preview Content */,
@@ -179,6 +182,7 @@
 				CC528FF32C1C7FDA0069DB8B /* CubeScene.swift in Sources */,
 				CC528FE52C1C7F5E0069DB8B /* _dcubetestApp.swift in Sources */,
 				CC2A6B4A2C2079FA004A439C /* ContentView.swift in Sources */,
+				CC9D7F8E2C2F2C6600389980 /* Coordinator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
